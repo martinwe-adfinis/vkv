@@ -1,0 +1,299 @@
+#!/bin/sh -
+
+# Minimalistic commandline interface for getting KV secrets from HashiCorp Vault
+# Written by martinwe on a cold Friday evening in January 2024.
+#
+# Dependencies:
+# · POSIX-compliant /bin/sh
+# · POSIX-compliant cat, printf, test/[, true/false
+# · GNU libc (for getent)
+# · GNU Coreutils (for id)
+# · HashiCorp Vault
+# · jq
+
+set -u
+
+# Return codes:
+E_SUCCESS=0
+E_USER=1
+E_VKV=2
+E_VAULT=3
+E_SYSTEM=4
+E_INTERNAL=13
+readonly E_SUCCESS E_USER E_VKV E_VAULT E_SYSTEM E_INTERNAL
+
+debugmsg()
+{
+	if $DEBUG; then
+		# shellcheck disable=SC2059
+		{ printf '\033[34m[DEBUG] '; printf "$@"; printf '\033[0m\n'; } >&2
+	fi
+}
+
+msg()
+{
+	# shellcheck disable=SC2059
+	{ printf "$@"; printf '\n'; } >&2
+}
+
+die()
+{
+	retval=$(($1)); shift
+	if [ $# -gt 0 ]; then
+		if [ $retval -eq $E_INTERNAL ]; then
+			printf '[BUG] ' >&2
+		fi
+		msg "$@"
+		if [ $retval -eq $E_USER ]; then
+			msg 'Run with -h for help.'
+		fi
+	fi
+	exit $retval
+}
+
+# ==============================================================================
+# HELPER FUNCTIONS
+# ==============================================================================
+
+_init_xdg()
+{
+	if [ -z "${USER:-}" ]; then
+		USER=$(id -un 2>&1) || die $E_SYSTEM 'Could not obtain username: %s' "$USER"
+	fi
+	if [ -z "${HOME:-}" ]; then
+		if ! passwd=$(getent passwd "$USER" 2>&1); then
+			die $E_SYSTEM \
+			    'Could not get passwd entry for user %s: %s' "$USER" "$passwd"
+		fi
+		HOME=${passwd%:*}
+		HOME=${HOME##*:}
+	fi
+	XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+	readonly USER HOME XDG_CONFIG_HOME
+}
+
+_init_config()
+{
+	_init_xdg
+	VKV_PATHSFILE=$XDG_CONFIG_HOME/vkv/paths
+	readonly VKV_PATHSFILE
+}
+
+_list_paths()
+{
+	_init_config
+	if ! output=$(
+		while read -r line; do
+			if [ -z "$line" ]; then
+				continue  # skip empty lines
+			fi
+			case "$line" in ('#'*)
+				continue  # skip commented lines
+			esac
+			printf '%s\n' "$line"
+		done 2>&1 <"$VKV_PATHSFILE"
+	); then
+		die $E_VKV 'Could not list paths in %s: %s' "$VKV_PATHSFILE" "$output"
+	fi
+
+	printf '%s\n' "$output"
+}
+
+_json_verify()
+{
+	json=$1
+	key=$2
+	value=$3
+
+	if ! jqout=$(
+		jq -r .data.data."$key" 2>&1 <<- EOF
+		$json
+		EOF
+	); then
+		die $E_VAULT \
+		    "Could not extract key '%s' from JSON data: %s" "$key" "$jqout"
+	fi
+
+	if [ "$value" != "$jqout" ]; then
+		die $E_VKV "KV secret contained differing value for key '%s'" "$key"
+	fi
+}
+
+# ==============================================================================
+# VKV SHOW
+# ==============================================================================
+
+command_show_print_help()
+{
+	cat <<- EOF
+	vkv show - show a KV secret
+
+	Usage: vkv show -h
+	       vkv show KVPATH QUERY...
+
+	Options:
+	  -h    Show this message and exit
+
+	See vkv(1) for more information on the format for KVPATH and QUERY.
+	EOF
+}
+
+command_show()
+{
+	while getopts :h opt; do
+		case "$opt" in
+			(h) command_show_print_help; exit $E_SUCCESS ;;
+			(:) die $E_USER 'Missing argument for -%s' "$OPTARG" ;;
+			('?') die $E_USER 'Unknown option -%s' "$OPTARG" ;;
+			(*) die $E_INTERNAL 'Unhandled option -%s' "$OPTARG" ;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	unset OPTARG
+
+	test $# -gt 0 || die $E_USER 'Missing KV path'
+	KVPATH=$1; shift
+
+	# Parse path (expect MOUNT/PATH):
+	case "$KVPATH" in
+		(*/*) ;;
+		(*) die $E_USER 'Invalid KV path: %s' "$KVPATH" ;;
+	esac
+	KVMOUNT=${KVPATH%%/*}
+	KVPATH=${KVPATH#*/}
+	readonly KVMOUNT KVPATH
+
+	# Parse queries:
+	have_query=false
+	nargs=$#
+	i=0
+	while [ $i -lt $nargs ]; do
+		arg=$1; shift
+		i=$((i + 1))
+		case "$arg" in
+			(*=*) set -- "$@" "$arg" ;;
+			(*)
+				if $have_query; then
+					die $E_USER \
+					    "Duplicate key-only query argument '%s' (already have '%s')" \
+					    "$arg" "$QUERY"
+				fi
+				QUERY=$arg
+				readonly QUERY
+				have_query=true
+				;;
+		esac
+	done
+
+	# Get secret from Vault:
+	if ! vout=$(vault kv get -format=json -mount="$KVMOUNT" "$KVPATH" 2>&1)
+	then
+		die $E_VAULT 'Could not get secret from Vault: %s' "$vout"
+	fi
+
+	debugmsg 'JSON response from Vault:\n%s' "$vout"
+
+	# Verify expected values:
+	for arg in "$@"; do
+		_json_verify "$vout" "${arg%%=*}" "${arg#*=}"
+	done
+
+	# Output requested value:
+	if ! jqout=$(
+		jq -r .data.data."$QUERY" 2>&1 <<- EOF
+		$vout
+		EOF
+	); then
+		die $E_VAULT \
+		    "Could not extract key '%s' from JSON data: %s" "$QUERY" "$jqout"
+	fi
+	printf '%s\n' "$jqout"
+}
+
+# ==============================================================================
+# VKV LIST
+# ==============================================================================
+
+command_list_print_help()
+{
+	cat <<- EOF
+	vkv list - list known KV paths
+
+	Aliases: ls
+
+	Usage: vkv list [-h]
+
+	Options:
+	  -h    Show this message and exit
+	EOF
+}
+
+command_list()
+{
+	while getopts :h opt; do
+		case "$opt" in
+			(h) command_list_print_help; exit $E_SUCCESS ;;
+			(:) die $E_USER 'Missing argument for -%s' "$OPTARG" ;;
+			('?') die $E_USER 'Unknown option -%s' "$OPTARG" ;;
+			(*) die $E_INTERNAL 'Unhandled option -%s' "$OPTARG" ;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	unset OPTARG
+
+	test $# -eq 0 || die $E_USER 'Trailing arguments: %s' "$*"
+
+	_list_paths
+}
+
+# Aliases:
+command_ls() { command_list "$@"; }
+
+# ==============================================================================
+# VKV
+# ==============================================================================
+
+print_help()
+{
+	cat <<- EOF
+	vkv - minimalistic HashiCorp Vault KV commandline interface client
+
+	Usage: vkv -h
+	       vkv [OPTIONS] COMMAND [ARGS...]
+
+	Options:
+	  -d      Show debug messages
+	  -h      Show this message and exit
+
+	Commands:
+	  help    Show this message and exit
+	  list    List all known KV paths
+	  show    SHOW a KV secret
+
+	Each command can be run with -h for additional information.
+	EOF
+}
+
+DEBUG=false
+while getopts :dh opt; do
+	case "$opt" in
+		(d) DEBUG=true ;;
+		(h) print_help; exit $E_SUCCESS ;;
+		(:) die $E_USER 'Missing argument for -%s' "$OPTARG" ;;
+		('?') die $E_USER 'Unknown option -%s' "$OPTARG" ;;
+		(*) die $E_INTERNAL 'Unhandled option -%s' "$OPTARG" ;;
+	esac
+done
+shift $((OPTIND - 1))
+unset OPTARG
+readonly DEBUG
+
+test $# -gt 0 || die $E_USER 'Missing command'
+COMMAND=$1; shift
+readonly COMMAND
+
+case "$COMMAND" in
+	(list|ls|show) "command_$COMMAND" "$@" ;;
+	(help) print_help ;;
+	(*) die $E_USER 'Unknown command: %s' "$COMMAND" ;;
+esac
