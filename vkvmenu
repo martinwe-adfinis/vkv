@@ -1,0 +1,43 @@
+#!/bin/sh -
+
+print_help()
+{
+	cat <<- EOF
+	vkvmenu - select vkv secrets with dmenu
+
+	Usage: vkvmenu -h
+	       vkvmenu [OPTIONS]
+
+	Options:
+	  -h     Show this message and exit
+	  -t     Type out the secret instead of copying it to the clipboard
+
+	If an option is not recognised (or -- is encountered), the remainder of the
+	arguments are passed to dmenu.
+	EOF
+}
+
+typeit=false
+readopts=true
+while $readopts && [ $# -gt 0 ]; do
+	case "$1" in
+		(-h|--help) print_help; exit 0 ;;
+		(-t|--type) typeit=true; shift ;;
+		(--) readopts=false; shift ;;
+		(*) readopts=false ;;
+	esac
+done
+
+queries=$(vkv list)
+query=$(
+	dmenu "$@" <<- EOF
+	$queries
+	EOF
+)
+if $typeit; then
+	# shellcheck disable=SC2086
+	vkv show $query | xdotool type --clearmodifiers --file -
+else
+	# shellcheck disable=SC2086
+	vkv show -c $query
+fi
