@@ -121,6 +121,45 @@ _json_verify()
 }
 
 # ==============================================================================
+# VKV LIST
+# ==============================================================================
+
+command_list_print_help()
+{
+	cat <<- EOF
+	vkv list - list known KV paths
+
+	Aliases: ls
+
+	Usage: vkv list [-h]
+
+	Options:
+	  -h    Show this message and exit
+	EOF
+}
+
+command_list()
+{
+	while getopts :h opt; do
+		case "$opt" in
+			(h) command_list_print_help; exit $E_SUCCESS ;;
+			(:) die $E_USER 'Missing argument for -%s' "$OPTARG" ;;
+			('?') die $E_USER 'Unknown option -%s' "$OPTARG" ;;
+			(*) die $E_INTERNAL 'Unhandled option -%s' "$OPTARG" ;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	unset OPTARG
+
+	test $# -eq 0 || die $E_USER 'Trailing arguments: %s' "$*"
+
+	_list_paths
+}
+
+# Aliases:
+command_ls() { command_list "$@"; }
+
+# ==============================================================================
 # VKV SHOW
 # ==============================================================================
 
@@ -220,45 +259,6 @@ command_show()
 		printf '%s' "$jqout"
 	fi
 }
-
-# ==============================================================================
-# VKV LIST
-# ==============================================================================
-
-command_list_print_help()
-{
-	cat <<- EOF
-	vkv list - list known KV paths
-
-	Aliases: ls
-
-	Usage: vkv list [-h]
-
-	Options:
-	  -h    Show this message and exit
-	EOF
-}
-
-command_list()
-{
-	while getopts :h opt; do
-		case "$opt" in
-			(h) command_list_print_help; exit $E_SUCCESS ;;
-			(:) die $E_USER 'Missing argument for -%s' "$OPTARG" ;;
-			('?') die $E_USER 'Unknown option -%s' "$OPTARG" ;;
-			(*) die $E_INTERNAL 'Unhandled option -%s' "$OPTARG" ;;
-		esac
-	done
-	shift $((OPTIND - 1))
-	unset OPTARG
-
-	test $# -eq 0 || die $E_USER 'Trailing arguments: %s' "$*"
-
-	_list_paths
-}
-
-# Aliases:
-command_ls() { command_list "$@"; }
 
 # ==============================================================================
 # VKV
