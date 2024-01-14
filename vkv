@@ -207,7 +207,7 @@ command_show()
 		die $E_VAULT \
 		    "Could not extract key '%s' from JSON data: %s" "$QUERY" "$jqout"
 	fi
-	printf '%s\n' "$jqout"
+	printf '%s' "$jqout"
 }
 
 # ==============================================================================
