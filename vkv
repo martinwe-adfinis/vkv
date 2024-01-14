@@ -10,6 +10,7 @@
 # · GNU Coreutils (for id)
 # · HashiCorp Vault
 # · jq
+# · xclip (for show -c)
 
 set -u
 
@@ -129,9 +130,10 @@ command_show_print_help()
 	vkv show - show a KV secret
 
 	Usage: vkv show -h
-	       vkv show KVPATH QUERY...
+	       vkv show [OPTIONS...] KVPATH QUERY...
 
 	Options:
+	  -c    Copy secret to clipboard instead of printing to stdout
 	  -h    Show this message and exit
 
 	See vkv(1) for more information on the format for KVPATH and QUERY.
@@ -140,8 +142,10 @@ command_show_print_help()
 
 command_show()
 {
-	while getopts :h opt; do
+	show_clipboard=false
+	while getopts :ch opt; do
 		case "$opt" in
+			(c) show_clipboard=true ;;
 			(h) command_show_print_help; exit $E_SUCCESS ;;
 			(:) die $E_USER 'Missing argument for -%s' "$OPTARG" ;;
 			('?') die $E_USER 'Unknown option -%s' "$OPTARG" ;;
@@ -207,7 +211,14 @@ command_show()
 		die $E_VAULT \
 		    "Could not extract key '%s' from JSON data: %s" "$QUERY" "$jqout"
 	fi
-	printf '%s' "$jqout"
+
+	if $show_clipboard; then
+		printf '%s' "$jqout" \
+			| xclip -i -selection "$PASSWORD_STORE_X_SELECTION" \
+		|| die $?
+	else
+		printf '%s' "$jqout"
+	fi
 }
 
 # ==============================================================================
