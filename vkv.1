@@ -1,0 +1,154 @@
+.TH VKV 1 2024-01-15 "vkv (git)" "user commands"
+
+.\" ============================================================================
+
+.\" disable hyphenation, left-align
+.nh
+.ad l
+
+.\" ============================================================================
+.SH NAME
+
+vkv - minimalistic commandline interface for getting KV secrets from HashiCorp
+Vault
+
+.\" ============================================================================
+.SH SYNOPSIS
+
+\fBvkv -h\fR
+.br
+\fBvkv\fR [\fIoptions\fR...] \fIcommand\fR [\fIargs\fR...]
+
+.\" ============================================================================
+.SH DESCRIPTION
+
+vkv allows fetching secrets from a HashiCorp Vault key-value (KV) store in a way
+similar to \fBpass\fR(1).
+
+vkv itself does not store any secrets, but it allows "bookmarking" paths to
+secrets in the KV store, for easier reuse (see \fBFILES\fR below).
+
+.SS Options
+
+.TP 4
+\fB-d\fR
+Print debug messages to \fBstderr\fR during execution (e.g. JSON responses).
+
+.TP
+\fB-h\fR
+Print a help message and exit.
+
+.SS Commands
+
+vkv's functionality is split up into multiple commands, each described in this
+section. In addition to the options described below, each command also accepts
+\fB-h\fR for showing a command-specific help message.
+
+.TP 4
+\fBlist\fR
+List all bookmarked KV paths. The bookmark file is described in the \fBFILES\fR
+section below.
+
+.TP
+\fBshow\fR [\fB-c\fR] \fIkvpath\fR \fIfield\fR [\fIfilter\fR...]
+Show the content of a secret's field in the KV store. \fIkvpath\fR denotes the
+secret's path; it is described in the \fBKV PATHS\fR section below. \fIfield\fR
+denotes the field to be selected within the secret. The optional \fIfilter\fR
+arguments verify that the other fields in the secret contain expected values;
+the format is described in the \fBFILTER FORMAT\fR section below. If \fB-c\fR is
+passed, the secret is copied to the X11 clipboard instead of being printed to
+\fBstdout\fR; see the section \fBCLIPBOARD\fR below for more details.
+
+.\" ============================================================================
+.SH KV PATHS
+
+Some commands take the KV path of a secret, which must be formated as follows:
+
+.RS 4
+\fImount\fB/\fIpath\fR
+.RE
+
+i.e. the first element of the path is split and interpreted as the KV v2
+mountpoint of the KV store. The remainder is taken as a path within that store.
+
+.\" ============================================================================
+.SH FILTER FORMAT
+
+A filter (used for the \fBshow\fR command) is of the following form:
+
+.RS 4
+\fIkey\fB=\fIvalue\fR
+.RE
+
+This instructs \fBshow\fR to verify that the field \fIkey\fR contains the value
+\fIvalue\fR and error out if the found value differs.
+
+This allows for example to ensure that a \fBusername\fR field contains the
+expected username for a requested \fBpassword\fR field. The following example
+shows a case where we want the password for a \fBweb.example.net\fR login, but
+only if the username is \fBwebmaster\fR, as expected:
+
+.RS 4
+\fBvkv show mykvstore/service/web.example.net/admin password username=webmaster\fR
+.RE
+
+.\" ============================================================================
+.SH ENVIRONMENT VARIABLES
+
+The following environment variables influence the behaviour of vkv:
+
+.TP 4
+\fBUSER\fR
+Username on the system. If unset, \fBid\fR(1p) is used to determine the
+username.
+
+.TP
+\fBHOME\fR
+Location of user files. If unset, the user's \fBpasswd\fR(5) entry is used to
+determine the home directory.
+
+.TP
+\fBXDG_CONFIG_HOME\fR
+Location of user configuration files (see also \fBFILES\fR below). If unset, the
+default \fB~/.config\fR is used in accordance with the XDG base directory
+specification.
+
+.TP
+\fBPASSWORD_STORE_X_SELECTION\fR
+X11 selection to be used for storing the secret with \fBshow -c\fR. Possible
+values are described in \fBxclip\fR(1), for the \fB-selection\fR option.
+
+.TP
+\fBVAULT_ADDR\fR
+Address to the HashiCorp Vault instance containing the secret.
+
+.PP
+Note that other \fBVAULT_…\fR environment variables may need to be set,
+depending on your local HashiCorp Vault setup.
+
+.\" ============================================================================
+.SH FILES
+
+.TP 4
+\fI$XDG_CONFIG_HOME\fB/vkv/paths\fR
+"Booksmarks" file containing a list of KV paths. This is listed by the
+\fBlist\fR command, which is also consumed by helper utilities like
+\fBvkvmenu\fR(1). Each line must contain the arguments for a \fBshow\fR
+invocation. Empty lines and lines starting with \fB#\fR are ignored.
+
+.\" ============================================================================
+.SH LIMITATIONS
+
+This utility is very minimalistic and not optimised for manual use. Instead,
+users are advised to use the \fBvkvmenu\fR(1) utility, an interactive menu for
+selecting secrets similar to \fBpassmenu\fR.
+
+.\" ============================================================================
+.SH SEE ALSO
+
+\fBvkvmenu\fR(1), \fBpass\fR(1) (\fBpassmenu\fR), \fBxclip\fR(1)
+
+.\" ============================================================================
+.SH BUGS
+
+Please report bugs on https://github.com/martinwe-adfinis/vkv/issues.

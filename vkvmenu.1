@@ -1,0 +1,54 @@
+.TH VKV 1 2024-01-15 "vkvmenu (git)" "user commands"
+
+.\" ============================================================================
+
+.\" disable hyphenation, left-align
+.nh
+.ad l
+
+.\" ============================================================================
+.SH NAME
+
+vkvmenu - select HashiCorp Vault KV secrets with dmenu
+
+.\" ============================================================================
+.SH SYNOPSIS
+
+\fBvkvmenu -h\fR
+.br
+\fBvkvmenu\fR [\fB-t\fR...] [\fIdmenu args\fR...]
+
+.\" ============================================================================
+.SH DESCRIPTION
+
+vkvmenu takes the list of secrets known to \fBvkv\fR(1) and presents them in
+\fBdmenu\fR(1) for convenient selection.
+
+Unless specified otherwise (see \fBOptions\fR below), the selected secret will
+be copied to the clipboard with \fBvkv show -c\fR.
+
+.SS Options
+
+.TP 4
+\fB-h\fR
+Print a help message and exit.
+
+.TP
+\fB-t\fR
+Instead of copying the secret to the clipboard, the secret is typed out using
+\fBxdotool\fR(1) ("auto-typing").
+
+.PP
+Any command line argument following \fB--\fR is passed to \fBdmenu\fR unchanged.
+Any unrecognised command line option (and all following arguments) are also
+passed to \fBdmenu\fR unchanged.
+
+.\" ============================================================================
+.SH SEE ALSO
+
+\fBdmenu\fR(1), \fBvkv\fR(1), \fBxdotool\fR(1)
+
+.\" ============================================================================
+.SH BUGS
+
+Please report bugs on https://github.com/martinwe-adfinis/vkv/issues.
