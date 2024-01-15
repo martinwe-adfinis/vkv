@@ -5,12 +5,22 @@
 #
 # Dependencies:
 # · POSIX-compliant /bin/sh
-# · POSIX-compliant cat, test/[, true/false
+# · POSIX-compliant cat, printf, test/[, true/false
 # · dmenu
+# · libnotify (for notify-send)
 # · vkv
 # · xdotool (for vkvmenu -t)
 
 set -u
+
+die()
+{
+	# shellcheck disable=SC2059
+	msg=$(printf "$@")
+	printf '%s\n' "$msg" >&2
+	notify-send 'vkvmenu' "$msg"
+	exit 1
+}
 
 print_help()
 {
@@ -41,16 +51,18 @@ while $readopts && [ $# -gt 0 ]; do
 done
 readonly TYPEIT
 
-queries=$(vkv list)
+queries=$(vkv list) || die 'Failed to list KV paths.'
 query=$(
 	dmenu "$@" <<- EOF
 	$queries
 	EOF
-)
+) || die 'Aborted by user.'
+
 if $TYPEIT; then
 	# shellcheck disable=SC2086
-	vkv show $query | xdotool type --clearmodifiers --file -
+	secret=$(vkv show $query) || die 'Failed to get secret.'
+	xdotool type --clearmodifiers "$secret" || die 'Failed to type out secret.'
 else
 	# shellcheck disable=SC2086
-	vkv show -c $query
+	vkv show -c $query || die 'Failed to get secret into clipboard.'
 fi
