@@ -40,15 +40,24 @@ print_help()
 }
 
 TYPEIT=false
-readopts=true
-while $readopts && [ $# -gt 0 ]; do
-	case "$1" in
-		(-h|--help) print_help; exit 0 ;;
-		(-t|--type) TYPEIT=true; shift ;;
-		(--) readopts=false; shift ;;
-		(*) readopts=false ;;
+passthrough=false
+while ! $passthrough && getopts :ht opt; do
+	case "$opt" in
+		(h) print_help; exit 0 ;;
+		(t) TYPEIT=true; shift ;;
+		(:) die 'Missing argument for -%s' "$OPTARG" ;;
+		('?')
+			if [ "$OPTARG" = '-' ]; then
+				shift
+				passthrough=true
+			else
+				die 'Unknown option -%s' "$OPTARG"
+			fi ;;
+		(*) die '[BUG] Unhandled option -%s' "$OPTARG"
 	esac
 done
+shift $((OPTIND - 1))
+unset OPTARG
 readonly TYPEIT
 
 queries=$(vkv list) || die 'Failed to list KV paths.'

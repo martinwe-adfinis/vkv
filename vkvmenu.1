@@ -16,7 +16,7 @@ vkvmenu - select HashiCorp Vault KV secrets with dmenu
 
 \fBvkvmenu -h\fR
 .br
-\fBvkvmenu\fR [\fB-t\fR...] [\fIdmenu args\fR...]
+\fBvkvmenu\fR [\fIoptions\fR...] [\fB--\fR [\fIdmenu args\fR...]]
 
 .\" ============================================================================
 .SH DESCRIPTION
@@ -40,8 +40,6 @@ Instead of copying the secret to the clipboard, the secret is typed out using
 
 .PP
 Any command line argument following \fB--\fR is passed to \fBdmenu\fR unchanged.
-Any unrecognised command line option (and all following arguments) are also
-passed to \fBdmenu\fR unchanged.
 
 .\" ============================================================================
 .SH SEE ALSO
