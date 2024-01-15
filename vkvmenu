@@ -27,16 +27,17 @@ print_help()
 	EOF
 }
 
-typeit=false
+TYPEIT=false
 readopts=true
 while $readopts && [ $# -gt 0 ]; do
 	case "$1" in
 		(-h|--help) print_help; exit 0 ;;
-		(-t|--type) typeit=true; shift ;;
+		(-t|--type) TYPEIT=true; shift ;;
 		(--) readopts=false; shift ;;
 		(*) readopts=false ;;
 	esac
 done
+readonly TYPEIT
 
 queries=$(vkv list)
 query=$(
@@ -44,7 +45,7 @@ query=$(
 	$queries
 	EOF
 )
-if $typeit; then
+if $TYPEIT; then
 	# shellcheck disable=SC2086
 	vkv show $query | xdotool type --clearmodifiers --file -
 else

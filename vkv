@@ -180,10 +180,10 @@ command_show_print_help()
 
 command_show()
 {
-	show_clipboard=false
+	SHOW_CLIPBOARD=false
 	while getopts :ch opt; do
 		case "$opt" in
-			(c) show_clipboard=true ;;
+			(c) SHOW_CLIPBOARD=true ;;
 			(h) command_show_print_help; exit $E_SUCCESS ;;
 			(:) die $E_USER 'Missing argument for -%s' "$OPTARG" ;;
 			('?') die $E_USER 'Unknown option -%s' "$OPTARG" ;;
@@ -192,6 +192,7 @@ command_show()
 	done
 	shift $((OPTIND - 1))
 	unset OPTARG
+	readonly SHOW_CLIPBOARD
 
 	test $# -gt 0 || die $E_USER 'Missing KV path'
 	KVPATH=$1; shift
@@ -244,7 +245,7 @@ command_show()
 		    "Could not extract key '%s' from JSON data: %s" "$KVFIELD" "$jqout"
 	fi
 
-	if $show_clipboard; then
+	if $SHOW_CLIPBOARD; then
 		printf '%s' "$jqout" \
 			| xclip -i -selection "${PASSWORD_STORE_X_SELECTION:-clipboard}" \
 		|| die $?
