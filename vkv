@@ -10,6 +10,7 @@
 # · GNU Coreutils (for id)
 # · HashiCorp Vault
 # · jq
+# · libnotify (for notify-send)
 # · xclip (for show -c)
 
 set -u
@@ -247,6 +248,7 @@ command_show()
 		printf '%s' "$jqout" \
 			| xclip -i -selection "${PASSWORD_STORE_X_SELECTION:-clipboard}" \
 		|| die $?
+		notify-send 'vkv' 'Secret successfully copied to clipboard'
 	else
 		printf '%s' "$jqout"
 	fi

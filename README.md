@@ -16,6 +16,7 @@ Dependencies
  * `getent` from GNU libc
  * `id` from GNU coreutils
  * HashiCorp Vault
+ * `notify-send` from libnotify
  * `jq`
 
 Further dependencies for optional functionality:
