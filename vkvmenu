@@ -13,6 +13,16 @@
 
 set -u
 
+dbgmsg()
+{
+	if $DEBUG; then
+		printf '\033[34m[DEBUG] '
+		# shellcheck disable=SC2059
+		printf "$@"
+		printf '\033[0m\n'
+	fi >&2
+}
+
 die()
 {
 	# shellcheck disable=SC2059
@@ -31,6 +41,7 @@ print_help()
 	       vkvmenu [OPTIONS]
 
 	Options:
+	  -d     Show debug messages
 	  -h     Show this message and exit
 	  -t     Type out the secret instead of copying it to the clipboard
 
@@ -39,10 +50,12 @@ print_help()
 	EOF
 }
 
+DEBUG=false
 TYPEIT=false
 passthrough=false
-while ! $passthrough && getopts :ht opt; do
+while ! $passthrough && getopts :dht opt; do
 	case "$opt" in
+		(d) DEBUG=true; shift ;;
 		(h) print_help; exit 0 ;;
 		(t) TYPEIT=true; shift ;;
 		(:) die 'Missing argument for -%s' "$OPTARG" ;;
@@ -58,7 +71,7 @@ while ! $passthrough && getopts :ht opt; do
 done
 shift $((OPTIND - 1))
 unset OPTARG
-readonly TYPEIT
+readonly DEBUG TYPEIT
 
 queries=$(vkv list) || die 'Failed to list KV paths.'
 query=$(
@@ -66,6 +79,8 @@ query=$(
 	$queries
 	EOF
 ) || die 'Aborted by user.'
+
+dbgmsg 'query=%s' "$query"
 
 if $TYPEIT; then
 	# shellcheck disable=SC2086
