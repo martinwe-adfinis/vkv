@@ -169,13 +169,11 @@ command_show_print_help()
 	vkv show - show a KV secret
 
 	Usage: vkv show -h
-	       vkv show [OPTIONS...] KVPATH QUERY...
+	       vkv show [OPTIONS...] KVPATH FIELD [FILTER...]
 
 	Options:
 	  -c    Copy secret to clipboard instead of printing to stdout
 	  -h    Show this message and exit
-
-	See vkv(1) for more information on the format for KVPATH and QUERY.
 	EOF
 }
 
@@ -206,24 +204,18 @@ command_show()
 	KVPATH=${KVPATH#*/}
 	readonly KVMOUNT KVPATH
 
-	# Parse queries:
-	have_query=false
-	nargs=$#
-	i=0
-	while [ $i -lt $nargs ]; do
-		arg=$1; shift
-		i=$((i + 1))
-		case "$arg" in
-			(*=*) set -- "$@" "$arg" ;;
+	# Get secret field:
+	test $# -gt 0 || die $E_USER 'Missing KV secret field'
+	KVFIELD=$1; shift
+	readonly KVFIELD
+
+	# Verify filters:
+	for filter in "$@"; do
+		case "$filter" in
+			(*=*) ;;
 			(*)
-				if $have_query; then
-					die $E_USER \
-					    "Duplicate key-only query argument '%s' (already have '%s')" \
-					    "$arg" "$QUERY"
-				fi
-				QUERY=$arg
-				readonly QUERY
-				have_query=true
+				die $E_USER \
+				    'Invalid filter (must be of form key=value): %s' "$filter"
 				;;
 		esac
 	done
@@ -237,18 +229,18 @@ command_show()
 	debugmsg 'JSON response from Vault:\n%s' "$vout"
 
 	# Verify expected values:
-	for arg in "$@"; do
-		_json_verify "$vout" "${arg%%=*}" "${arg#*=}"
+	for filter in "$@"; do
+		_json_verify "$vout" "${filter%%=*}" "${filter#*=}"
 	done
 
 	# Output requested value:
 	if ! jqout=$(
-		jq -r .data.data."$QUERY" 2>&1 <<- EOF
+		jq -r .data.data."$KVFIELD" 2>&1 <<- EOF
 		$vout
 		EOF
 	); then
 		die $E_VAULT \
-		    "Could not extract key '%s' from JSON data: %s" "$QUERY" "$jqout"
+		    "Could not extract key '%s' from JSON data: %s" "$KVFIELD" "$jqout"
 	fi
 
 	if $show_clipboard; then
