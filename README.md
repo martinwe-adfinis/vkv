@@ -65,12 +65,12 @@ Instead of writing it out to stdout, you can also copy it to the clipboard:
 
 Verify that the username is indeed as expected:
 
-    $ vkv show -c mykv/service/web.admin.net/admin password username=webmaster
+    $ vkv show mykv/service/web.admin.net/admin password username=webmaster
     hunter2
 
 vs.
 
-    $ vkv show -c mykv/service/web.admin.net/admin password username=blabla
+    $ vkv show mykv/service/web.admin.net/admin password username=blabla
     KV secret contained differing value for key 'username'
 
 List "bookmarked" secrets (used by `vkvmenu` to provide suggestions):
