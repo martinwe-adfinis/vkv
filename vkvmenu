@@ -1,5 +1,15 @@
 #!/bin/sh -
 
+# dmenu frontend to vkv(1)
+# Written by martinwe on a cold Sunday afternoon in January 2024.
+#
+# Dependencies:
+# · POSIX-compliant /bin/sh
+# · POSIX-compliant cat, test/[, true/false
+# · dmenu
+# · vkv
+# · xdotool (for vkvmenu -t)
+
 print_help()
 {
 	cat <<- EOF
