@@ -71,16 +71,14 @@ Verify that the username is indeed as expected:
 vs.
 
     $ vkv show -c mykv/service/web.admin.net/admin password username=blabla
-    KV secret contained differing value for key 'password'
+    KV secret contained differing value for key 'username'
 
-List "bookmarked" secrets:
+List "bookmarked" secrets (used by `vkvmenu` to provide suggestions):
 
     $ vkv list
     mykv/service/web.admin.net/admin password username=webmaster
     mykv/service/db.admin.net/admin password username=dbmaster
     mykv/system/webbox01/root password username=root
-
-This list is used by `vkvmenu` to provide suggestions.
 
 
 Disclaimer
