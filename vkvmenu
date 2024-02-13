@@ -86,7 +86,9 @@ if $TYPEIT; then
 	# shellcheck disable=SC2086
 	secret=$(vkv show $query) || die 'Failed to get secret.'
 	xdotool type --clearmodifiers "$secret" || die 'Failed to type out secret.'
+	notify-send 'vkvmenu' 'Secret successfully typed out.'
 else
 	# shellcheck disable=SC2086
 	vkv show -c $query || die 'Failed to get secret into clipboard.'
+	# vkv already shows notification for this
 fi
