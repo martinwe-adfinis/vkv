@@ -22,8 +22,8 @@ Vault
 .\" ============================================================================
 .SH DESCRIPTION
 
-vkv allows fetching secrets from a HashiCorp Vault key-value (KV) store in a way
-similar to \fBpass\fR(1).
+vkv allows fetching secrets from a HashiCorp Vault (or compatible) key-value
+(KV) store in a way similar to \fBpass\fR(1).
 
 vkv itself does not store any secrets, but it allows "bookmarking" paths to
 secrets in the KV store, for easier reuse (see \fBFILES\fR below).
@@ -143,6 +143,10 @@ invocation. Empty lines and lines starting with \fB#\fR are ignored.
 This utility is very minimalistic and not optimised for manual use. Instead,
 users are advised to use the \fBvkvmenu\fR(1) utility, an interactive menu for
 selecting secrets similar to \fBpassmenu\fR.
+
+It also currently assumes the executable to be named \fBvault\fR. Any compatible
+tool (like OpenBao) must therefore provide that command in \fI$PATH\fR, for
+instance with a shim executable or a compatibility symlink.
 
 .\" ============================================================================
 .SH SEE ALSO

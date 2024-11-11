@@ -1,8 +1,9 @@
 vkv
 ===
 
-`vkv` is a tool for easily fetching secrets from a HashiCorp Vault key-value
-(KV) store. It is primarily targeted at users of `pass(1)` and similar tools.
+`vkv` is a tool for easily fetching secrets from a HashiCorp Vault (or
+compatible) key-value (KV) store. It is primarily targeted at users of `pass(1)`
+and similar tools.
 
 `vkvmenu` is a dmenu wrapper for more interactively selecting (and optionally
 auto-typing) a secret, similar to `passmenu`.
@@ -15,7 +16,8 @@ Dependencies
  * POSIX-compliant `cat`, `printf`, `test`/`[` and `true`/`false`
  * `getent` from GNU libc
  * `id` from GNU coreutils
- * HashiCorp Vault
+ * HashiCorp Vault (or compatible drop-in replacement, e.g.
+   [OpenBao](https://github.com/openbao/openbao)
  * `notify-send` from libnotify
  * `jq`
 
