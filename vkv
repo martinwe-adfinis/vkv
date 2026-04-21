@@ -1,6 +1,6 @@
 #!/bin/sh -
 
-# Minimalistic commandline interface for getting KV secrets from HashiCorp Vault
+# Minimalistic commandline interface for getting KV secrets from OpenBao.
 # Written by martinwe on a cold Friday evening in January 2024.
 #
 # Dependencies:
@@ -8,7 +8,7 @@
 # · POSIX-compliant cat, printf, test/[, true/false
 # · GNU libc (for getent)
 # · GNU Coreutils (for id)
-# · HashiCorp Vault
+# · OpenBao
 # · jq
 # · libnotify (for notify-send)
 # · xclip (for show -c)
@@ -19,10 +19,10 @@ set -u
 E_SUCCESS=0
 E_USER=1
 E_VKV=2
-E_VAULT=3
+E_BAO=3
 E_SYSTEM=4
 E_INTERNAL=13
-readonly E_SUCCESS E_USER E_VKV E_VAULT E_SYSTEM E_INTERNAL
+readonly E_SUCCESS E_USER E_VKV E_BAO E_SYSTEM E_INTERNAL
 
 debugmsg()
 {
@@ -112,7 +112,7 @@ _json_verify()
 		$json
 		EOF
 	); then
-		die $E_VAULT \
+		die $E_BAO \
 		    "Could not extract key '%s' from JSON data: %s" "$key" "$jqout"
 	fi
 
@@ -222,26 +222,26 @@ command_show()
 		esac
 	done
 
-	# Get secret from Vault:
-	if ! vout=$(vault kv get -format=json -mount="$KVMOUNT" "$KVPATH" 2>&1)
+	# Get secret from OpenBao:
+	if ! bout=$(bao kv get -format=json -mount="$KVMOUNT" "$KVPATH" 2>&1)
 	then
-		die $E_VAULT 'Could not get secret from Vault: %s' "$vout"
+		die $E_BAO 'Could not get secret from OpenBao: %s' "$bout"
 	fi
 
-	debugmsg 'JSON response from Vault:\n%s' "$vout"
+	debugmsg 'JSON response from OpenBao:\n%s' "$bout"
 
 	# Verify expected values:
 	for filter in "$@"; do
-		_json_verify "$vout" "${filter%%=*}" "${filter#*=}"
+		_json_verify "$bout" "${filter%%=*}" "${filter#*=}"
 	done
 
 	# Output requested value:
 	if ! jqout=$(
 		jq -r .data.data."$KVFIELD" 2>&1 <<- EOF
-		$vout
+		$bout
 		EOF
 	); then
-		die $E_VAULT \
+		die $E_BAO \
 		    "Could not extract key '%s' from JSON data: %s" "$KVFIELD" "$jqout"
 	fi
 
@@ -262,7 +262,7 @@ command_show()
 print_help()
 {
 	cat <<- EOF
-	vkv - minimalistic HashiCorp Vault KV commandline interface client
+	vkv - minimalistic OpenBao KV commandline interface client
 
 	Usage: vkv -h
 	       vkv [OPTIONS] COMMAND [ARGS...]
