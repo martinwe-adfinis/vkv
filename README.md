@@ -1,9 +1,8 @@
 vkv
 ===
 
-`vkv` is a tool for easily fetching secrets from a HashiCorp Vault (or
-compatible) key-value (KV) store. It is primarily targeted at users of `pass(1)`
-and similar tools.
+`vkv` is a tool for easily fetching secrets from an OpenBao key-value store. It
+is primarily targeted at users of `pass(1)` and similar keyboard-centric tools.
 
 `vkvmenu` is a dmenu wrapper for more interactively selecting (and optionally
 auto-typing) a secret, similar to `passmenu`.
@@ -16,8 +15,7 @@ Dependencies
  * POSIX-compliant `cat`, `printf`, `test`/`[` and `true`/`false`
  * `getent` from GNU libc
  * `id` from GNU coreutils
- * HashiCorp Vault (or compatible drop-in replacement, e.g.
-   [OpenBao](https://github.com/openbao/openbao)
+ * OpenBao
  * `notify-send` from libnotify
  * `jq`
 
@@ -50,10 +48,9 @@ simply be read in this project directory with `man ./vkv.1` and `man
 Usage
 -----
 
-Set `VAULT_ADDR` and other environment as required for accessing your HashiCorp
-Vault instance.
+Set `BAO_ADDR` for accessing your OpenBao service:
 
-    $ export VAULT_ADDR=https://vault.example.net
+    $ export BAO_ADDR=https://bao.example.net
 
 Get the `password` secret contained in the `mykv` KV instance at the path
 `service/web.example.net/admin`:
@@ -81,10 +78,3 @@ List "bookmarked" secrets (used by `vkvmenu` to provide suggestions):
     mykv/service/web.admin.net/admin password username=webmaster
     mykv/service/db.admin.net/admin password username=dbmaster
     mykv/system/webbox01/root password username=root
-
-
-Disclaimer
-----------
-
-vkv is not related to HashiCorp or to any of its products, both Vault and
-otherwise.

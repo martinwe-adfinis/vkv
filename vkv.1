@@ -1,4 +1,4 @@
-.TH VKV 1 2024-01-15 "vkv (git)" "user commands"
+.TH VKV 1 2026-04-21 "vkv (git)" "user commands"
 
 .\" ============================================================================
 
@@ -9,8 +9,7 @@
 .\" ============================================================================
 .SH NAME
 
-vkv - minimalistic commandline interface for getting KV secrets from HashiCorp
-Vault
+vkv - minimalistic commandline interface for getting KV secrets from OpenBao
 
 .\" ============================================================================
 .SH SYNOPSIS
@@ -22,8 +21,8 @@ Vault
 .\" ============================================================================
 .SH DESCRIPTION
 
-vkv allows fetching secrets from a HashiCorp Vault (or compatible) key-value
-(KV) store in a way similar to \fBpass\fR(1).
+vkv allows fetching secrets from a OpenBao key-value store in a way similar to
+\fBpass\fR(1).
 
 vkv itself does not store any secrets, but it allows "bookmarking" paths to
 secrets in the KV store, for easier reuse (see \fBFILES\fR below).
@@ -120,12 +119,12 @@ values are described in \fBxclip\fR(1), for the \fB-selection\fR option. The
 default is \fBclipboard\fR.
 
 .TP
-\fBVAULT_ADDR\fR
-Address to the HashiCorp Vault instance containing the secret.
+\fBBAO_ADDR\fR
+Address to the OpenBao service containing the secret.
 
 .PP
-Note that other \fBVAULT_…\fR environment variables may need to be set,
-depending on your local HashiCorp Vault setup.
+Note that other \fBBAO_…\fR environment variables may need to be set, depending
+on your local OpenBao setup.
 
 .\" ============================================================================
 .SH FILES
@@ -143,10 +142,6 @@ invocation. Empty lines and lines starting with \fB#\fR are ignored.
 This utility is very minimalistic and not optimised for manual use. Instead,
 users are advised to use the \fBvkvmenu\fR(1) utility, an interactive menu for
 selecting secrets similar to \fBpassmenu\fR.
-
-It also currently assumes the executable to be named \fBvault\fR. Any compatible
-tool (like OpenBao) must therefore provide that command in \fI$PATH\fR, for
-instance with a shim executable or a compatibility symlink.
 
 .\" ============================================================================
 .SH SEE ALSO
